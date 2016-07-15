@@ -6,7 +6,10 @@ Gold Miner ist ein Flashgame bei dem mit Hilfe eines Greifhakens Goldklumpen ein
 
 (Neben Goldklumpen können auch noch andere Gegenstände erscheinen, wie z.B. Diamanten oder Steinklumpen)
 
+13.07.2016
+wenig erfolgreich bisher, schiessen mit Spacetaste möglich, Zeit wird angezeigt, Punkte Stand wird angezeigt, ein Felsbroken ermöglicht Punkte zu sammeln. Konzept leicht verändert, kleinere Broken geben mehr Punkte, größere Broken weniger Punkte
 
-- 13.07.2016
-- wenig erfolgreich bisher, schiessen mit Spacetaste möglich, Zeit wird angezeigt, Punkte Stand wird angezeigt, ein Felsbroken ermöglicht   Punkte zu sammeln. Konzept leicht verändert, kleinere Broken geben mehr Punkte, größere Broken weniger Punkte
-- https://github.com/Dinendal92/Abschlussprojekt-DP2016/blob/Dinendal92-hmtldatei/index.html
+15.07.2016
+
+Level 1 und 2 spielbar, Level 2 erweitert das Spiel um in der Luft fliegende "Snitches"
+https://Dinendal92.github.io/Abschlussprojekt-DP2016/index.html
