@@ -267,13 +267,11 @@ type Msg
     = TimeUpdate Time
     | TimeUpdate2 Time
     | TimeGame Time
-    | Shoot
     | KeyDown KeyCode
     | KeyUp KeyCode
     | Collide KeyCode
     | UpdateSnitchX Time
     | UpdateSnitchY Time
-    | GameState Time
     | NewGame
     | NextLevel
 
@@ -312,7 +310,10 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update action model =
     case action of
         TimeGame time ->
-            ( { model | timeGame = model.timeGame + 1 }, Cmd.none )
+            if (floor (model.timeGame / 60)) > (model.levelTime + 1) then
+                ( { model | state = Lose }, Cmd.none )
+            else
+                ( { model | timeGame = model.timeGame + 1 }, Cmd.none )
 
         TimeUpdate newTime ->
             if model.shoot then
@@ -322,12 +323,6 @@ update action model =
 
         TimeUpdate2 newTime ->
             ( { model | timeSnitch = newTime }, Cmd.none )
-
-        Shoot ->
-            if model.length > 180 then
-                ( { model | length = model.length + 2, shoot = True }, Cmd.none )
-            else
-                ( { model | collision = False, length = 12 }, Cmd.none )
 
         KeyDown keyCode ->
             ( keyDown keyCode model, Cmd.none )
@@ -359,6 +354,8 @@ update action model =
                     ( { model | score = model.score + 700, collision = isCollision2 model.snitch1 model, snitch1 = setX2 model model.snitch1, snitch1 = setY2 model model.snitch1, length = 12 }, Cmd.none )
                 else if isThisCollision2 model.snitch2 model then
                     ( { model | score = model.score + 700, collision = isCollision2 model.snitch2 model, snitch2 = setX2 model model.snitch2, snitch2 = setY2 model model.snitch2, length = 12 }, Cmd.none )
+                else if model.score >= model.goal then
+                    ( { model | state = Win }, Cmd.none )
                 else
                     ( model, Cmd.none )
             else
@@ -369,14 +366,6 @@ update action model =
 
         UpdateSnitchY time ->
             ( { model | snitch1 = snitchY model.snitch1 model, snitch2 = snitchY model.snitch2 model }, Cmd.none )
-
-        GameState time ->
-            if model.score >= model.goal then
-                ( { model | state = Win }, Cmd.none )
-            else if (floor (model.timeGame / 60)) > (model.levelTime + 1) then
-                ( { model | state = Lose }, Cmd.none )
-            else
-                ( model, Cmd.none )
 
         NextLevel ->
             ( { model
@@ -470,7 +459,6 @@ subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.batch
         [ Keyboard.downs Collide
-        , Time.every second GameState
         , Keyboard.downs KeyDown
         , Keyboard.ups KeyUp
         , AnimationFrame.times TimeUpdate
