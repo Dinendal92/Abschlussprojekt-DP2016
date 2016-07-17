@@ -270,12 +270,22 @@ type Msg
     | Shoot
     | KeyDown KeyCode
     | KeyUp KeyCode
-    | Collide Time
+    | Collide KeyCode
     | UpdateSnitchX Time
     | UpdateSnitchY Time
     | GameState Time
     | NewGame
     | NextLevel
+
+
+isKeyDown : KeyCode -> Model -> Bool
+isKeyDown keyCode model =
+    case fromCode keyCode of
+        Space ->
+            True
+
+        _ ->
+            False
 
 
 keyDown : KeyCode -> Model -> Model
@@ -325,29 +335,32 @@ update action model =
         KeyUp keyCode ->
             ( keyUp keyCode model, Cmd.none )
 
-        Collide time ->
-            if isThisCollision model.iron1 model then
-                ( { model | score = model.score + 70, collision = isCollision model.iron1 model, iron1 = setX model model.iron1, iron1 = setY model model.iron1, length = 12 }, Cmd.none )
-            else if isThisCollision model.iron2 model then
-                ( { model | score = model.score + 70, collision = isCollision model.iron2 model, iron2 = setX model model.iron2, iron2 = setY model model.iron2, length = 12 }, Cmd.none )
-            else if isThisCollision model.iron3 model then
-                ( { model | score = model.score + 70, collision = isCollision model.iron3 model, iron3 = setX model model.iron3, iron3 = setY model model.iron3, length = 12 }, Cmd.none )
-            else if isThisCollision model.silver1 model then
-                ( { model | score = model.score + 200, collision = isCollision model.silver1 model, silver1 = setX model model.silver1, silver1 = setY model model.silver1, length = 12 }, Cmd.none )
-            else if isThisCollision model.silver2 model then
-                ( { model | score = model.score + 200, collision = isCollision model.silver2 model, silver2 = setX model model.silver2, silver2 = setY model model.silver2, length = 12 }, Cmd.none )
-            else if isThisCollision model.silver3 model then
-                ( { model | score = model.score + 200, collision = isCollision model.silver3 model, silver3 = setX model model.silver3, silver3 = setY model model.silver3, length = 12 }, Cmd.none )
-            else if isThisCollision model.gold1 model then
-                ( { model | score = model.score + 500, collision = isCollision model.gold1 model, gold1 = setX model model.gold1, gold1 = setY model model.gold1, length = 12 }, Cmd.none )
-            else if isThisCollision model.gold2 model then
-                ( { model | score = model.score + 500, collision = isCollision model.gold2 model, gold2 = setX model model.gold2, gold2 = setY model model.gold2, length = 12 }, Cmd.none )
-            else if isThisCollision model.gold3 model then
-                ( { model | score = model.score + 500, collision = isCollision model.gold3 model, gold3 = setX model model.gold3, gold3 = setY model model.gold3, length = 12 }, Cmd.none )
-            else if isThisCollision2 model.snitch1 model then
-                ( { model | score = model.score + 700, collision = isCollision2 model.snitch1 model, snitch1 = setX2 model model.snitch1, snitch1 = setY2 model model.snitch1, length = 12 }, Cmd.none )
-            else if isThisCollision2 model.snitch2 model then
-                ( { model | score = model.score + 700, collision = isCollision2 model.snitch2 model, snitch2 = setX2 model model.snitch2, snitch2 = setY2 model model.snitch2, length = 12 }, Cmd.none )
+        Collide keyCode ->
+            if isKeyDown keyCode model then
+                if isThisCollision model.iron1 model then
+                    ( { model | score = model.score + 70, collision = isCollision model.iron1 model, iron1 = setX model model.iron1, iron1 = setY model model.iron1, length = 12 }, Cmd.none )
+                else if isThisCollision model.iron2 model then
+                    ( { model | score = model.score + 70, collision = isCollision model.iron2 model, iron2 = setX model model.iron2, iron2 = setY model model.iron2, length = 12 }, Cmd.none )
+                else if isThisCollision model.iron3 model then
+                    ( { model | score = model.score + 70, collision = isCollision model.iron3 model, iron3 = setX model model.iron3, iron3 = setY model model.iron3, length = 12 }, Cmd.none )
+                else if isThisCollision model.silver1 model then
+                    ( { model | score = model.score + 200, collision = isCollision model.silver1 model, silver1 = setX model model.silver1, silver1 = setY model model.silver1, length = 12 }, Cmd.none )
+                else if isThisCollision model.silver2 model then
+                    ( { model | score = model.score + 200, collision = isCollision model.silver2 model, silver2 = setX model model.silver2, silver2 = setY model model.silver2, length = 12 }, Cmd.none )
+                else if isThisCollision model.silver3 model then
+                    ( { model | score = model.score + 200, collision = isCollision model.silver3 model, silver3 = setX model model.silver3, silver3 = setY model model.silver3, length = 12 }, Cmd.none )
+                else if isThisCollision model.gold1 model then
+                    ( { model | score = model.score + 500, collision = isCollision model.gold1 model, gold1 = setX model model.gold1, gold1 = setY model model.gold1, length = 12 }, Cmd.none )
+                else if isThisCollision model.gold2 model then
+                    ( { model | score = model.score + 500, collision = isCollision model.gold2 model, gold2 = setX model model.gold2, gold2 = setY model model.gold2, length = 12 }, Cmd.none )
+                else if isThisCollision model.gold3 model then
+                    ( { model | score = model.score + 500, collision = isCollision model.gold3 model, gold3 = setX model model.gold3, gold3 = setY model model.gold3, length = 12 }, Cmd.none )
+                else if isThisCollision2 model.snitch1 model then
+                    ( { model | score = model.score + 700, collision = isCollision2 model.snitch1 model, snitch1 = setX2 model model.snitch1, snitch1 = setY2 model model.snitch1, length = 12 }, Cmd.none )
+                else if isThisCollision2 model.snitch2 model then
+                    ( { model | score = model.score + 700, collision = isCollision2 model.snitch2 model, snitch2 = setX2 model model.snitch2, snitch2 = setY2 model model.snitch2, length = 12 }, Cmd.none )
+                else
+                    ( model, Cmd.none )
             else
                 ( model, Cmd.none )
 
@@ -456,7 +469,8 @@ update action model =
 subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.batch
-        [ Time.every Time.millisecond Collide
+        [ Keyboard.downs Collide
+        , Time.every second GameState
         , Keyboard.downs KeyDown
         , Keyboard.ups KeyUp
         , AnimationFrame.times TimeUpdate
@@ -464,7 +478,6 @@ subscriptions model =
         , AnimationFrame.times TimeUpdate2
         , AnimationFrame.times UpdateSnitchX
         , AnimationFrame.times UpdateSnitchY
-        , Time.every second GameState
         ]
 
 
