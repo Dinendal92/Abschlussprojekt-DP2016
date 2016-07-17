@@ -17,7 +17,7 @@ main =
         { init = init
         , view = view
         , update = update
-        , subscriptions = subscriptionsComplete
+        , subscriptions = subscriptions
         }
 
 
@@ -154,6 +154,11 @@ init =
 -- UPDATE
 
 
+shoot : Model -> Model
+shoot model =
+    { model | length = model.length + 2, shoot = True }
+
+
 angle : Model -> Float
 angle model =
     turns (Time.inMinutes model.time) * 6
@@ -172,11 +177,6 @@ handX model =
 handY : Model -> Float
 handY model =
     (120 + model.length * sin (angle model))
-
-
-shoot : Model -> Model
-shoot model =
-    { model | length = model.length + 2, shoot = True }
 
 
 isCollision : Mineral -> Model -> Bool
@@ -267,24 +267,13 @@ type Msg
     = TimeUpdate Time
     | TimeUpdate2 Time
     | TimeGame Time
+    | Shoot
     | KeyDown KeyCode
     | KeyUp KeyCode
-    | Collide1 Time
-    | Collide2 Time
-    | Collide3 Time
-    | Collide4 Time
-    | Collide5 Time
-    | Collide6 Time
-    | Collide7 Time
-    | Collide8 Time
-    | Collide9 Time
-    | Collide10 Time
-    | Collide11 Time
+    | Collide Time
     | UpdateSnitchX Time
     | UpdateSnitchY Time
-    | Reset Time
-    | Won Time
-    | Lost Time
+    | GameState Time
     | NewGame
     | NextLevel
 
@@ -316,10 +305,19 @@ update action model =
             ( { model | timeGame = model.timeGame + 1 }, Cmd.none )
 
         TimeUpdate newTime ->
-            ( { model | time = newTime }, Cmd.none )
+            if model.shoot then
+                ( model, Cmd.none )
+            else
+                ( { model | time = newTime }, Cmd.none )
 
         TimeUpdate2 newTime ->
             ( { model | timeSnitch = newTime }, Cmd.none )
+
+        Shoot ->
+            if model.length > 180 then
+                ( { model | length = model.length + 2, shoot = True }, Cmd.none )
+            else
+                ( { model | collision = False, length = 12 }, Cmd.none )
 
         KeyDown keyCode ->
             ( keyDown keyCode model, Cmd.none )
@@ -327,38 +325,31 @@ update action model =
         KeyUp keyCode ->
             ( keyUp keyCode model, Cmd.none )
 
-        Collide1 time ->
-            ( { model | score = model.score + 35, collision = isCollision model.iron1 model, iron1 = setX model model.iron1, iron1 = setY model model.iron1 }, Cmd.none )
-
-        Collide2 time ->
-            ( { model | score = model.score + 35, collision = isCollision model.iron2 model, iron2 = setX model model.iron2, iron2 = setY model model.iron2 }, Cmd.none )
-
-        Collide3 time ->
-            ( { model | score = model.score + 35, collision = isCollision model.iron3 model, iron3 = setX model model.iron3, iron3 = setY model model.iron3 }, Cmd.none )
-
-        Collide4 time ->
-            ( { model | score = model.score + 100, collision = isCollision model.silver1 model, silver1 = setX model model.silver1, silver1 = setY model model.silver1 }, Cmd.none )
-
-        Collide5 time ->
-            ( { model | score = model.score + 100, collision = isCollision model.silver2 model, silver2 = setX model model.silver2, silver2 = setY model model.silver2 }, Cmd.none )
-
-        Collide6 time ->
-            ( { model | score = model.score + 100, collision = isCollision model.silver3 model, silver3 = setX model model.silver3, silver3 = setY model model.silver3 }, Cmd.none )
-
-        Collide7 time ->
-            ( { model | score = model.score + 250, collision = isCollision model.gold1 model, gold1 = setX model model.gold1, gold1 = setY model model.gold1 }, Cmd.none )
-
-        Collide8 time ->
-            ( { model | score = model.score + 250, collision = isCollision model.gold2 model, gold2 = setX model model.gold2, gold2 = setY model model.gold2 }, Cmd.none )
-
-        Collide9 time ->
-            ( { model | score = model.score + 250, collision = isCollision model.gold3 model, gold3 = setX model model.gold3, gold3 = setY model model.gold3 }, Cmd.none )
-
-        Collide10 time ->
-            ( { model | score = model.score + 350, collision = isCollision2 model.snitch1 model, snitch1 = setX2 model model.snitch1, snitch1 = setY2 model model.snitch1 }, Cmd.none )
-
-        Collide11 time ->
-            ( { model | score = model.score + 350, collision = isCollision2 model.snitch2 model, snitch2 = setX2 model model.snitch2, snitch2 = setY2 model model.snitch2 }, Cmd.none )
+        Collide time ->
+            if isThisCollision model.iron1 model then
+                ( { model | score = model.score + 70, collision = isCollision model.iron1 model, iron1 = setX model model.iron1, iron1 = setY model model.iron1, length = 12 }, Cmd.none )
+            else if isThisCollision model.iron2 model then
+                ( { model | score = model.score + 70, collision = isCollision model.iron2 model, iron2 = setX model model.iron2, iron2 = setY model model.iron2, length = 12 }, Cmd.none )
+            else if isThisCollision model.iron3 model then
+                ( { model | score = model.score + 70, collision = isCollision model.iron3 model, iron3 = setX model model.iron3, iron3 = setY model model.iron3, length = 12 }, Cmd.none )
+            else if isThisCollision model.silver1 model then
+                ( { model | score = model.score + 200, collision = isCollision model.silver1 model, silver1 = setX model model.silver1, silver1 = setY model model.silver1, length = 12 }, Cmd.none )
+            else if isThisCollision model.silver2 model then
+                ( { model | score = model.score + 200, collision = isCollision model.silver2 model, silver2 = setX model model.silver2, silver2 = setY model model.silver2, length = 12 }, Cmd.none )
+            else if isThisCollision model.silver3 model then
+                ( { model | score = model.score + 200, collision = isCollision model.silver3 model, silver3 = setX model model.silver3, silver3 = setY model model.silver3, length = 12 }, Cmd.none )
+            else if isThisCollision model.gold1 model then
+                ( { model | score = model.score + 500, collision = isCollision model.gold1 model, gold1 = setX model model.gold1, gold1 = setY model model.gold1, length = 12 }, Cmd.none )
+            else if isThisCollision model.gold2 model then
+                ( { model | score = model.score + 500, collision = isCollision model.gold2 model, gold2 = setX model model.gold2, gold2 = setY model model.gold2, length = 12 }, Cmd.none )
+            else if isThisCollision model.gold3 model then
+                ( { model | score = model.score + 500, collision = isCollision model.gold3 model, gold3 = setX model model.gold3, gold3 = setY model model.gold3, length = 12 }, Cmd.none )
+            else if isThisCollision2 model.snitch1 model then
+                ( { model | score = model.score + 700, collision = isCollision2 model.snitch1 model, snitch1 = setX2 model model.snitch1, snitch1 = setY2 model model.snitch1, length = 12 }, Cmd.none )
+            else if isThisCollision2 model.snitch2 model then
+                ( { model | score = model.score + 700, collision = isCollision2 model.snitch2 model, snitch2 = setX2 model model.snitch2, snitch2 = setY2 model model.snitch2, length = 12 }, Cmd.none )
+            else
+                ( model, Cmd.none )
 
         UpdateSnitchX time ->
             ( { model | snitch1 = snitchX model.snitch1 model, snitch2 = snitchX model.snitch2 model }, Cmd.none )
@@ -366,14 +357,13 @@ update action model =
         UpdateSnitchY time ->
             ( { model | snitch1 = snitchY model.snitch1 model, snitch2 = snitchY model.snitch2 model }, Cmd.none )
 
-        Reset time ->
-            ( { model | collision = False, length = 12 }, Cmd.none )
-
-        Won time ->
-            ( { model | state = Win }, Cmd.none )
-
-        Lost time ->
-            ( { model | state = Lose }, Cmd.none )
+        GameState time ->
+            if model.score >= model.goal then
+                ( { model | state = Win }, Cmd.none )
+            else if (floor (model.timeGame / 60)) > (model.levelTime + 1) then
+                ( { model | state = Lose }, Cmd.none )
+            else
+                ( model, Cmd.none )
 
         NextLevel ->
             ( { model
@@ -463,120 +453,19 @@ update action model =
 -- SUBSCRIPTIONS
 
 
-subscriptionsComplete : Model -> Sub Msg
-subscriptionsComplete model =
+subscriptions : Model -> Sub Msg
+subscriptions model =
     Sub.batch
-        [ subscriptions model
+        [ Time.every Time.millisecond Collide
+        , Keyboard.downs KeyDown
+        , Keyboard.ups KeyUp
+        , AnimationFrame.times TimeUpdate
         , AnimationFrame.diffs TimeGame
         , AnimationFrame.times TimeUpdate2
         , AnimationFrame.times UpdateSnitchX
         , AnimationFrame.times UpdateSnitchY
+        , Time.every second GameState
         ]
-
-
-subscriptions : Model -> Sub Msg
-subscriptions model =
-    if model.shoot then
-        if model.length > 180 then
-            Sub.batch
-                [ Time.every Time.millisecond Reset
-                ]
-        else if isThisCollision model.iron1 model then
-            Sub.batch
-                [ Time.every Time.millisecond Reset
-                , Time.every (Time.millisecond * 1.1) Collide1
-                , Keyboard.downs KeyDown
-                , Keyboard.ups KeyUp
-                ]
-        else if isThisCollision model.iron2 model then
-            Sub.batch
-                [ Time.every Time.millisecond Reset
-                , Time.every (Time.millisecond * 1.1) Collide2
-                , Keyboard.downs KeyDown
-                , Keyboard.ups KeyUp
-                ]
-        else if isThisCollision model.iron3 model then
-            Sub.batch
-                [ Time.every Time.millisecond Reset
-                , Time.every (Time.millisecond * 1.1) Collide3
-                , Keyboard.downs KeyDown
-                , Keyboard.ups KeyUp
-                ]
-        else if isThisCollision model.silver1 model then
-            Sub.batch
-                [ Time.every Time.millisecond Reset
-                , Time.every (Time.millisecond * 1.1) Collide4
-                , Keyboard.downs KeyDown
-                , Keyboard.ups KeyUp
-                ]
-        else if isThisCollision model.silver2 model then
-            Sub.batch
-                [ Time.every Time.millisecond Reset
-                , Time.every (Time.millisecond * 1.1) Collide5
-                , Keyboard.downs KeyDown
-                , Keyboard.ups KeyUp
-                ]
-        else if isThisCollision model.silver3 model then
-            Sub.batch
-                [ Time.every Time.millisecond Reset
-                , Time.every (Time.millisecond * 1.1) Collide6
-                , Keyboard.downs KeyDown
-                , Keyboard.ups KeyUp
-                ]
-        else if isThisCollision model.gold1 model then
-            Sub.batch
-                [ Time.every Time.millisecond Reset
-                , Time.every (Time.millisecond * 1.1) Collide7
-                , Keyboard.downs KeyDown
-                , Keyboard.ups KeyUp
-                ]
-        else if isThisCollision model.gold2 model then
-            Sub.batch
-                [ Time.every Time.millisecond Reset
-                , Time.every (Time.millisecond * 1.1) Collide8
-                , Keyboard.downs KeyDown
-                , Keyboard.ups KeyUp
-                ]
-        else if isThisCollision model.gold3 model then
-            Sub.batch
-                [ Time.every Time.millisecond Reset
-                , Time.every (Time.millisecond * 1.1) Collide9
-                , Keyboard.downs KeyDown
-                , Keyboard.ups KeyUp
-                ]
-        else if isThisCollision2 model.snitch1 model then
-            Sub.batch
-                [ Time.every Time.millisecond Reset
-                , Time.every (Time.millisecond * 1.1) Collide10
-                , Keyboard.downs KeyDown
-                , Keyboard.ups KeyUp
-                ]
-        else if isThisCollision2 model.snitch2 model then
-            Sub.batch
-                [ Time.every Time.millisecond Reset
-                , Time.every (Time.millisecond * 1.1) Collide11
-                , Keyboard.downs KeyDown
-                , Keyboard.ups KeyUp
-                ]
-        else
-            Sub.batch
-                [ Keyboard.downs KeyDown
-                , Keyboard.ups KeyUp
-                ]
-    else if model.score >= model.goal then
-        Sub.batch
-            [ Time.every second Won
-            ]
-    else if (floor (model.timeGame / 60)) > (model.levelTime+1) then
-        Sub.batch
-            [ Time.every second Lost
-            ]
-    else
-        Sub.batch
-            [ AnimationFrame.times TimeUpdate
-            , Keyboard.downs KeyDown
-            , Keyboard.ups KeyUp
-            ]
 
 
 
@@ -592,7 +481,7 @@ view model =
             , p [] [ Html.text (toString model.score ++ "/ " ++ toString model.goal) ]
             , p [] [ Html.text "Zeit: " ]
             , p [] [ Html.text (toString ((model.levelTime - (floor (Time.inSeconds model.timeGame * 16))))) ]
-            , p [] [ Html.text "Eisen = 50 Punkte ///// Silber = 200 Punkte ///// Gold = 500 Punkte ///// Goldener Snitch = 700 Punkte" ]
+            , p [] [ Html.text "Eisen = 70 Punkte ///// Silber = 200 Punkte ///// Gold = 500 Punkte ///// Goldener Snitch = 700 Punkte" ]
             , p [] [ Html.text "Leertaste gedrückt halten um zu schießen." ]
             ]
     else if model.state == Lose then
