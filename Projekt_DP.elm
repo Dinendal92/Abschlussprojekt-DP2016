@@ -31,6 +31,53 @@ type Key
     | Unknown
 
 
+type State
+    = Play
+    | Win
+    | Lose
+
+
+type alias Mineral =
+    { radius : Float
+    , x : Float
+    , y : Float
+    }
+
+
+type alias Snitch =
+    { radius : Float
+    , x : Float
+    , y : Float
+    , xCenter : Float
+    , yCenter : Float
+    }
+
+
+type alias Model =
+    { state : State
+    , score : Float
+    , goal : Float
+    , gold : List Mineral
+    , silver : List Mineral
+    , iron : List Mineral
+    , snitch : List Snitch
+    , bludger : List Snitch
+    , timeSnitch : Time
+    , time : Time
+    , timeGame : Float
+    , length : Float
+    , shoot : Bool
+    , collision : Bool
+    , level : Int
+    , levelTime : Int
+    }
+
+
+model : Model
+model =
+    level1
+
+
 fromCode : Int -> Key
 fromCode keyCode =
     case keyCode of
@@ -69,67 +116,6 @@ getYSnitch snitch =
 getRSnitch : Snitch -> String
 getRSnitch snitch =
     toString snitch.radius
-
-
-type State
-    = Play
-    | Win
-    | Lose
-
-
-type alias Mineral =
-    { radius : Float
-    , x : Float
-    , y : Float
-    }
-
-
-type alias Snitch =
-    { radius : Float
-    , x : Float
-    , y : Float
-    , xCenter : Float
-    , yCenter : Float
-    }
-
-
-type alias Model =
-    { state : State
-    , score : Float
-    , goal : Float
-    , gold : List Mineral
-    , silver : List Mineral
-    , iron : List Mineral
-    , snitch : List Snitch
-    , timeSnitch : Time
-    , time : Time
-    , timeGame : Float
-    , length : Float
-    , shoot : Bool
-    , collision : Bool
-    , level : Int
-    , levelTime : Int
-    }
-
-
-model : Model
-model =
-    { state = Play
-    , score = 0
-    , goal = 1800
-    , gold = [ { radius = 3, x = 40, y = 210 }, { radius = 3, x = 160, y = 220 }, { radius = 3, x = 220, y = 150 } ]
-    , silver = [ { radius = 7, x = 70, y = 190 }, { radius = 7, x = 120, y = 210 }, { radius = 7, x = 30, y = 150 } ]
-    , iron = [ { radius = 10, x = 180, y = 200 }, { radius = 10, x = 60, y = 165 }, { radius = 10, x = 220, y = 170 } ]
-    , snitch = []
-    , timeSnitch = 0
-    , time = 0
-    , timeGame = 0
-    , length = 12
-    , shoot = False
-    , collision = False
-    , level = 1
-    , levelTime = 60
-    }
 
 
 init : ( Model, Cmd Msg )
@@ -224,14 +210,26 @@ snitchPos list model =
                 []
 
             _ ->
-                [ { radius = getSnitch.radius
-                  , x = (getSnitch.xCenter + 20 * cos (angle2 model))
-                  , y = (getSnitch.yCenter + 20 * sin (angle2 model))
-                  , xCenter = getSnitch.xCenter
-                  , yCenter = getSnitch.yCenter
-                  }
-                ]
-                    ++ snitchPos (removeAt 0 list) model
+                case getRSnitch getSnitch of
+                    "4" ->
+                        [ { radius = getSnitch.radius
+                          , x = (getSnitch.xCenter + 20 * cos (angle2 model))
+                          , y = (getSnitch.yCenter + 20 * sin (angle2 model))
+                          , xCenter = getSnitch.xCenter
+                          , yCenter = getSnitch.yCenter
+                          }
+                        ]
+                            ++ snitchPos (removeAt 0 list) model
+
+                    _ ->
+                        [ { radius = getSnitch.radius
+                          , x = (getSnitch.xCenter + 20 * cos (angle2 model))
+                          , y = (getSnitch.yCenter + 40 * sin (angle2 model))
+                          , xCenter = getSnitch.xCenter
+                          , yCenter = getSnitch.yCenter
+                          }
+                        ]
+                            ++ snitchPos (removeAt 0 list) model
 
 
 type Msg
@@ -351,76 +349,38 @@ update action model =
                 ( { model | score = model.score + 500, collision = True, gold = removeAt (snd (collisionWhere model model.gold model.gold)) model.gold, length = 12 }, Cmd.none )
             else if fst (collisionWhere2 model model.snitch model.snitch) then
                 ( { model | score = model.score + 700, collision = True, snitch = removeAt (snd (collisionWhere2 model model.snitch model.snitch)) model.snitch, length = 12 }, Cmd.none )
+            else if fst (collisionWhere2 model model.bludger model.bludger) then
+                ( { model | score = model.score - 100, collision = True, bludger = removeAt (snd (collisionWhere2 model model.bludger model.bludger)) model.bludger, length = 12 }, Cmd.none )
             else
                 ( model, Cmd.none )
 
         UpdateSnitchPos time ->
-            if model.snitch /= [] then
-                ( { model | snitch = snitchPos model.snitch model }, Cmd.Extra.message Collide )
-            else
+            if model.snitch == [] && model.bludger == [] then
                 ( model, Cmd.none )
+            else
+                ( { model | snitch = snitchPos model.snitch model, bludger = snitchPos model.bludger model }, Cmd.Extra.message Collide )
 
         NextLevel ->
-            ( { model
-                | state = Play
-                , score = 0
-                , goal = 3000
-                , gold = [ { radius = 3, x = 40, y = 210 }, { radius = 3, x = 160, y = 220 }, { radius = 3, x = 220, y = 150 } ]
-                , silver = [ { radius = 7, x = 70, y = 190 }, { radius = 7, x = 120, y = 210 }, { radius = 7, x = 30, y = 150 } ]
-                , iron = [ { radius = 10, x = 180, y = 200 }, { radius = 10, x = 60, y = 165 }, { radius = 10, x = 220, y = 170 } ]
-                , snitch = [ { radius = 5, x = 90, y = 50, xCenter = 90, yCenter = 50 }, { radius = 5, x = 170, y = 80, xCenter = 170, yCenter = 80 } ]
-                , time = 0
-                , timeGame = 0
-                , length = 12
-                , shoot = False
-                , collision = False
-                , level = 2
-                , levelTime = 80
-              }
+            ( (case getAt model.level levels of
+                Just y ->
+                    y
+
+                Nothing ->
+                    model
+              )
             , Cmd.none
             )
 
         NewGame ->
-            if model.level == 1 then
-                ( { model
-                    | state = Play
-                    , score = 0
-                    , goal = 1800
-                    , gold = [ { radius = 3, x = 40, y = 210 }, { radius = 3, x = 160, y = 220 }, { radius = 3, x = 220, y = 150 } ]
-                    , silver = [ { radius = 7, x = 70, y = 190 }, { radius = 7, x = 120, y = 210 }, { radius = 7, x = 30, y = 150 } ]
-                    , iron = [ { radius = 10, x = 180, y = 200 }, { radius = 10, x = 60, y = 165 }, { radius = 10, x = 220, y = 170 } ]
-                    , snitch = []
-                    , timeSnitch = 0
-                    , time = 0
-                    , timeGame = 0
-                    , length = 12
-                    , shoot = False
-                    , collision = False
-                    , level = 1
-                    , levelTime = 60
-                  }
-                , Cmd.none
-                )
-            else
-                ( { model
-                    | state = Play
-                    , score = 0
-                    , goal = 3000
-                    , gold = [ { radius = 3, x = 40, y = 210 }, { radius = 3, x = 160, y = 220 }, { radius = 3, x = 220, y = 150 } ]
-                    , silver = [ { radius = 7, x = 70, y = 190 }, { radius = 7, x = 120, y = 210 }, { radius = 7, x = 30, y = 150 } ]
-                    , iron = [ { radius = 10, x = 180, y = 200 }, { radius = 10, x = 60, y = 165 }, { radius = 10, x = 220, y = 170 } ]
-                    , snitch = [ { radius = 5, x = 90, y = 50, xCenter = 90, yCenter = 50 }, { radius = 5, x = 170, y = 80, xCenter = 170, yCenter = 80 } ]
-                    , timeSnitch = 0
-                    , time = 0
-                    , timeGame = 0
-                    , length = 12
-                    , shoot = False
-                    , collision = False
-                    , level = 2
-                    , levelTime = 80
-                  }
-                , Cmd.none
-                )
+            ( (case getAt (model.level - 1) levels of
+                Just y ->
+                    y
+
+                Nothing ->
+                    model
+              )
+            , Cmd.none
+            )
 
 
 
@@ -452,23 +412,23 @@ view model =
             , p [] [ Html.text (toString model.score ++ "/ " ++ toString model.goal) ]
             , p [] [ Html.text "Zeit: " ]
             , p [] [ Html.text (toString ((model.levelTime - (floor (Time.inSeconds model.timeGame * 16))))) ]
-            , p [] [ Html.text "Eisen = 70 Punkte ///// Silber = 200 Punkte ///// Gold = 500 Punkte ///// Goldener Snitch = 700 Punkte" ]
+            , p [] [ Html.text "Eisen = 70 Punkte ///// Silber = 200 Punkte ///// Gold = 500 Punkte ///// Goldener Snitch = 700 Punkte ///// Bludger = - 100 Punkte  " ]
             , p [] [ Html.text "Leertaste gedrückt halten um zu schießen." ]
             ]
     else if model.state == Lose then
         div []
-            [ p [] [ Html.text "YOU LOST" ]
+            [ p [] [ Html.text "Level nicht geschafft." ]
             , button [ onClick NewGame ] [ Html.text "Neuer Versuch" ]
             ]
-    else if model.level == 1 then
+    else if model.level == length levels then
         div []
-            [ p [] [ Html.text "YOU WON" ]
-            , button [ onClick NextLevel ] [ Html.text "Nächstes Level" ]
+            [ p [] [ Html.text "Alle Level geschafft." ]
+            , button [ onClick NewGame ] [ Html.text "Letztes Level wiederholen" ]
             ]
     else
         div []
-            [ p [] [ Html.text "YOU WON" ]
-            , button [ onClick NewGame ] [ Html.text "Nochmal spielen" ]
+            [ p [] [ Html.text "Level geschafft." ]
+            , button [ onClick NextLevel ] [ Html.text "Nächstes Level" ]
             ]
 
 
@@ -523,7 +483,21 @@ drawSnitch list =
                 []
 
             _ ->
-                [ circle [ cx (getXSnitch getSnitch), cy (getYSnitch (getSnitch)), r (getRSnitch (getSnitch)), fill "#E7CB2A" ] [] ]
+                [ circle
+                    [ cx (getXSnitch getSnitch)
+                    , cy (getYSnitch (getSnitch))
+                    , r (getRSnitch (getSnitch))
+                    , fill
+                        (case getRSnitch (getSnitch) of
+                            "4" ->
+                                "#E7CB2A"
+
+                            _ ->
+                                "Black"
+                        )
+                    ]
+                    []
+                ]
                     ++ drawSnitch (removeAt 0 list)
 
 
@@ -544,5 +518,78 @@ gameWorld model =
             , drawMineral model.silver
             , drawMineral model.gold
             , drawSnitch model.snitch
+            , drawSnitch model.bludger
             ]
         )
+
+
+
+-- Levels
+
+
+levels : List Model
+levels =
+    [ level1, level2, level3 ]
+
+
+level1 : Model
+level1 =
+    { state = Play
+    , score = 1800
+    , goal = 1800
+    , gold = [ { radius = 3, x = 40, y = 210 }, { radius = 3, x = 160, y = 220 }, { radius = 3, x = 220, y = 150 } ]
+    , silver = [ { radius = 7, x = 70, y = 190 }, { radius = 7, x = 120, y = 210 }, { radius = 7, x = 30, y = 150 } ]
+    , iron = [ { radius = 10, x = 180, y = 200 }, { radius = 10, x = 60, y = 165 }, { radius = 10, x = 220, y = 170 } ]
+    , snitch = []
+    , bludger = []
+    , timeSnitch = 0
+    , time = 0
+    , timeGame = 0
+    , length = 12
+    , shoot = False
+    , collision = False
+    , level = 1
+    , levelTime = 60
+    }
+
+
+level2 : Model
+level2 =
+    { state = Play
+    , score = 3000
+    , goal = 3000
+    , gold = [ { radius = 3, x = 40, y = 210 }, { radius = 3, x = 160, y = 220 }, { radius = 3, x = 220, y = 150 } ]
+    , silver = [ { radius = 7, x = 70, y = 190 }, { radius = 7, x = 120, y = 210 }, { radius = 7, x = 30, y = 150 } ]
+    , iron = [ { radius = 10, x = 180, y = 200 }, { radius = 10, x = 60, y = 165 }, { radius = 10, x = 220, y = 170 } ]
+    , snitch = [ { radius = 4, x = 90, y = 50, xCenter = 90, yCenter = 50 }, { radius = 4, x = 170, y = 80, xCenter = 170, yCenter = 80 } ]
+    , bludger = []
+    , timeSnitch = 0
+    , time = 0
+    , timeGame = 0
+    , length = 12
+    , shoot = False
+    , collision = False
+    , level = 2
+    , levelTime = 70
+    }
+
+
+level3 : Model
+level3 =
+    { state = Play
+    , score = 0
+    , goal = 3000
+    , gold = [ { radius = 3, x = 40, y = 210 }, { radius = 3, x = 160, y = 220 }, { radius = 3, x = 220, y = 150 } ]
+    , silver = [ { radius = 7, x = 70, y = 190 }, { radius = 7, x = 120, y = 210 }, { radius = 7, x = 30, y = 150 } ]
+    , iron = [ { radius = 10, x = 180, y = 200 }, { radius = 10, x = 60, y = 165 }, { radius = 10, x = 220, y = 170 } ]
+    , snitch = [ { radius = 4, x = 90, y = 50, xCenter = 90, yCenter = 50 }, { radius = 4, x = 170, y = 80, xCenter = 170, yCenter = 80 } ]
+    , bludger = [ { radius = 5, x = 90, y = 45, xCenter = 90, yCenter = 45 }, { radius = 5, x = 175, y = 80, xCenter = 175, yCenter = 80 } ]
+    , timeSnitch = 0
+    , time = 0
+    , timeGame = 0
+    , length = 12
+    , shoot = False
+    , collision = False
+    , level = 3
+    , levelTime = 70
+    }
