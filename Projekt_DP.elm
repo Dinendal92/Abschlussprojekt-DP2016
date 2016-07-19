@@ -535,7 +535,7 @@ levels =
 level1 : Model
 level1 =
     { state = Play
-    , score = 1800
+    , score = 0
     , goal = 1800
     , gold = [ { radius = 3, x = 40, y = 210 }, { radius = 3, x = 160, y = 220 }, { radius = 3, x = 220, y = 150 } ]
     , silver = [ { radius = 7, x = 70, y = 190 }, { radius = 7, x = 120, y = 210 }, { radius = 7, x = 30, y = 150 } ]
@@ -556,7 +556,7 @@ level1 =
 level2 : Model
 level2 =
     { state = Play
-    , score = 3000
+    , score = 0
     , goal = 3000
     , gold = [ { radius = 3, x = 40, y = 210 }, { radius = 3, x = 160, y = 220 }, { radius = 3, x = 220, y = 150 } ]
     , silver = [ { radius = 7, x = 70, y = 190 }, { radius = 7, x = 120, y = 210 }, { radius = 7, x = 30, y = 150 } ]
