@@ -6,12 +6,11 @@ import Html.App as Html
 import Svg exposing (..)
 import Svg.Attributes exposing (..)
 import Time exposing (Time, second)
-import Animation exposing (..)
-import Mouse exposing (..)
 import Keyboard exposing (KeyCode)
 import AnimationFrame exposing (..)
 import List exposing (..)
 import Cmd.Extra exposing (..)
+import List.Extra exposing (..)
 
 
 main =
@@ -21,26 +20,6 @@ main =
         , update = update
         , subscriptions = subscriptions
         }
-
-
-getMineral : List Mineral -> Int -> Mineral
-getMineral list pos =
-    case (head (drop (pos - 1) list)) of
-        Just y ->
-            y
-
-        Nothing ->
-            { radius = 0, x = 0, y = 0 }
-
-
-getSnitch : List Snitch -> Int -> Snitch
-getSnitch list pos =
-    case (head (drop (pos - 1) list)) of
-        Just y ->
-            y
-
-        Nothing ->
-            { radius = 0, x = 0, y = 0, xCenter = 0, yCenter = 0 }
 
 
 
@@ -90,34 +69,6 @@ getYSnitch snitch =
 getRSnitch : Snitch -> String
 getRSnitch snitch =
     toString snitch.radius
-
-
-deleteMineral : List Mineral -> Int -> List Mineral
-deleteMineral list pos =
-    if length ((drop (pos - 1) list)) < 2 then
-        (take (pos - 1) list)
-    else
-        (take (pos - 1) list)
-            ++ case ((tail (drop (pos - 1) list))) of
-                Just y ->
-                    y
-
-                Nothing ->
-                    []
-
-
-deleteSnitch : List Snitch -> Int -> List Snitch
-deleteSnitch list pos =
-    if length ((drop (pos - 1) list)) < 2 then
-        (take (pos - 1) list)
-    else
-        (take (pos - 1) list)
-            ++ case ((tail (drop (pos - 1) list))) of
-                Just y ->
-                    y
-
-                Nothing ->
-                    []
 
 
 type State
@@ -257,44 +208,30 @@ isThisCollision2 snitch model =
         && (handY model <= (snitch.y + snitch.radius))
 
 
-snitchX : List Snitch -> Model -> List Snitch
-snitchX list model =
-    if list == [] then
-        []
-    else
-        [ { radius = (getSnitch list 1).radius
-          , x = ((getSnitch list 1).xCenter + 20 * cos (angle2 model))
-          , y = (getSnitch list 1).y
-          , xCenter = (getSnitch list 1).xCenter
-          , yCenter = (getSnitch list 1).yCenter
-          }
-        ]
-            ++ case (tail list) of
+snitchPos : List Snitch -> Model -> List Snitch
+snitchPos list model =
+    let
+        getSnitch =
+            case getAt 0 list of
                 Just y ->
-                    snitchX y model
+                    y
 
                 Nothing ->
-                    []
+                    { radius = 0, x = 0, y = 0, xCenter = 0, yCenter = 0 }
+    in
+        case list of
+            [] ->
+                []
 
-
-snitchY : List Snitch -> Model -> List Snitch
-snitchY list model =
-    if list == [] then
-        []
-    else
-        [ { radius = (getSnitch list 1).radius
-          , x = (getSnitch list 1).x
-          , y = ((getSnitch list 1).yCenter + 20 * sin (angle2 model))
-          , xCenter = (getSnitch list 1).xCenter
-          , yCenter = (getSnitch list 1).yCenter
-          }
-        ]
-            ++ case (tail list) of
-                Just y ->
-                    snitchY y model
-
-                Nothing ->
-                    []
+            _ ->
+                [ { radius = getSnitch.radius
+                  , x = (getSnitch.xCenter + 20 * cos (angle2 model))
+                  , y = (getSnitch.yCenter + 20 * sin (angle2 model))
+                  , xCenter = getSnitch.xCenter
+                  , yCenter = getSnitch.yCenter
+                  }
+                ]
+                    ++ snitchPos (removeAt 0 list) model
 
 
 type Msg
@@ -304,8 +241,7 @@ type Msg
     | KeyDown KeyCode
     | KeyUp KeyCode
     | Collide
-    | UpdateSnitchX Time
-    | UpdateSnitchY Time
+    | UpdateSnitchPos Time
     | NewGame
     | NextLevel
 
@@ -330,23 +266,73 @@ keyUp keyCode model =
             model
 
 
+collisionWhere : Model -> List Mineral -> List Mineral -> ( Bool, Int )
+collisionWhere model minerals list =
+    let
+        getMineral list =
+            case getAt 0 list of
+                Just y ->
+                    y
+
+                Nothing ->
+                    { radius = 0, x = 0, y = 0 }
+    in
+        case list of
+            [] ->
+                ( False, 0 )
+
+            _ ->
+                case isThisCollision (getMineral list) model of
+                    True ->
+                        ( True, ((length minerals) - (length list)) )
+
+                    False ->
+                        collisionWhere model minerals (removeAt 0 list)
+
+
+collisionWhere2 : Model -> List Snitch -> List Snitch -> ( Bool, Int )
+collisionWhere2 model snitches list =
+    let
+        getSnitch list =
+            case getAt 0 list of
+                Just y ->
+                    y
+
+                Nothing ->
+                    { radius = 0, x = 0, y = 0, xCenter = 0, yCenter = 1 }
+    in
+        case list of
+            [] ->
+                ( False, 0 )
+
+            _ ->
+                case isThisCollision2 (getSnitch list) model of
+                    True ->
+                        ( True, ((length snitches) - (length list)) )
+
+                    False ->
+                        collisionWhere2 model snitches (removeAt 0 list)
+
+
 update : Msg -> Model -> ( Model, Cmd Msg )
 update action model =
     case action of
         TimeGame time ->
-            if (floor (model.timeGame / 60)) > (model.levelTime + 1) then
+            if model.state == Lose then
+                ( { model | timeGame = 0 }, Cmd.none )
+            else if (floor (model.timeGame / 60)) > (model.levelTime + 1) then
                 ( { model | state = Lose }, Cmd.none )
             else
-                ( { model | timeGame = model.timeGame + 1 }, Cmd.none )
+                ( { model | timeGame = model.timeGame + 1 }, Cmd.Extra.message Collide )
 
         TimeUpdate newTime ->
             if model.shoot then
                 ( model, Cmd.none )
             else
-                ( { model | time = newTime }, Cmd.none )
+                ( { model | time = newTime }, Cmd.Extra.message Collide )
 
         TimeUpdate2 newTime ->
-            ( { model | timeSnitch = newTime }, Cmd.none )
+            ( { model | timeSnitch = newTime }, Cmd.Extra.message Collide )
 
         KeyDown keyCode ->
             ( keyDown keyCode model, Cmd.Extra.message Collide )
@@ -355,42 +341,22 @@ update action model =
             ( keyUp keyCode model, Cmd.none )
 
         Collide ->
-            if isThisCollision (getMineral model.iron 1) model then
-                ( { model | score = model.score + 70, collision = isCollision (getMineral model.iron 1) model, iron = deleteMineral model.iron 1, length = 12 }, Cmd.none )
-            else if isThisCollision (getMineral model.iron 2) model then
-                ( { model | score = model.score + 70, collision = isCollision (getMineral model.iron 2) model, iron = deleteMineral model.iron 2, length = 12 }, Cmd.none )
-            else if isThisCollision (getMineral model.iron 3) model then
-                ( { model | score = model.score + 70, collision = isCollision (getMineral model.iron 3) model, iron = deleteMineral model.iron 3, length = 12 }, Cmd.none )
-            else if isThisCollision (getMineral model.silver 1) model then
-                ( { model | score = model.score + 200, collision = isCollision (getMineral model.silver 1) model, silver = deleteMineral model.silver 1, length = 12 }, Cmd.none )
-            else if isThisCollision (getMineral model.silver 2) model then
-                ( { model | score = model.score + 200, collision = isCollision (getMineral model.silver 2) model, silver = deleteMineral model.silver 2, length = 12 }, Cmd.none )
-            else if isThisCollision (getMineral model.silver 3) model then
-                ( { model | score = model.score + 200, collision = isCollision (getMineral model.silver 3) model, silver = deleteMineral model.silver 3, length = 12 }, Cmd.none )
-            else if isThisCollision (getMineral model.gold 1) model then
-                ( { model | score = model.score + 500, collision = isCollision (getMineral model.gold 1) model, gold = deleteMineral model.gold 1, length = 12 }, Cmd.none )
-            else if isThisCollision (getMineral model.gold 2) model then
-                ( { model | score = model.score + 500, collision = isCollision (getMineral model.gold 2) model, gold = deleteMineral model.gold 2, length = 12 }, Cmd.none )
-            else if isThisCollision (getMineral model.gold 3) model then
-                ( { model | score = model.score + 500, collision = isCollision (getMineral model.gold 3) model, gold = deleteMineral model.gold 3, length = 12 }, Cmd.none )
-            else if isThisCollision2 (getSnitch model.snitch 1) model then
-                ( { model | score = model.score + 700, collision = isCollision2 (getSnitch model.snitch 1) model, snitch = deleteSnitch model.snitch 1, length = 12 }, Cmd.none )
-            else if isThisCollision2 (getSnitch model.snitch 2) model then
-                ( { model | score = model.score + 700, collision = isCollision2 (getSnitch model.snitch 2) model, snitch = deleteSnitch model.snitch 2, length = 12 }, Cmd.none )
-            else if model.score >= model.goal then
+            if model.score >= model.goal then
                 ( { model | state = Win }, Cmd.none )
+            else if fst (collisionWhere model model.iron model.iron) then
+                ( { model | score = model.score + 70, collision = True, iron = removeAt (snd (collisionWhere model model.iron model.iron)) model.iron, length = 12 }, Cmd.none )
+            else if fst (collisionWhere model model.silver model.silver) then
+                ( { model | score = model.score + 200, collision = True, silver = removeAt (snd (collisionWhere model model.silver model.silver)) model.silver, length = 12 }, Cmd.none )
+            else if fst (collisionWhere model model.gold model.gold) then
+                ( { model | score = model.score + 500, collision = True, gold = removeAt (snd (collisionWhere model model.gold model.gold)) model.gold, length = 12 }, Cmd.none )
+            else if fst (collisionWhere2 model model.snitch model.snitch) then
+                ( { model | score = model.score + 700, collision = True, snitch = removeAt (snd (collisionWhere2 model model.snitch model.snitch)) model.snitch, length = 12 }, Cmd.none )
             else
                 ( model, Cmd.none )
 
-        UpdateSnitchX time ->
+        UpdateSnitchPos time ->
             if model.snitch /= [] then
-                ( { model | snitch = snitchX model.snitch model }, Cmd.none )
-            else
-                ( model, Cmd.none )
-
-        UpdateSnitchY time ->
-            if model.snitch /= [] then
-                ( { model | snitch = snitchY model.snitch model }, Cmd.none )
+                ( { model | snitch = snitchPos model.snitch model }, Cmd.Extra.message Collide )
             else
                 ( model, Cmd.none )
 
@@ -469,8 +435,7 @@ subscriptions model =
         , AnimationFrame.times TimeUpdate
         , AnimationFrame.diffs TimeGame
         , AnimationFrame.times TimeUpdate2
-        , AnimationFrame.times UpdateSnitchX
-        , AnimationFrame.times UpdateSnitchY
+        , AnimationFrame.times UpdateSnitchPos
         ]
 
 
@@ -507,64 +472,59 @@ view model =
             ]
 
 
-drawIron list =
-    if list /= [] then
-        [ circle [ cx (getX (getMineral list 1)), cy (getY (getMineral list 1)), r (getR (getMineral list 1)), fill "#52514A" ] [] ]
-            ++ drawIron
-                (case (tail (list)) of
-                    Just y ->
-                        y
+drawMineral list =
+    let
+        getMineral =
+            case getAt 0 list of
+                Just y ->
+                    y
 
-                    Nothing ->
-                        []
-                )
-    else
-        []
+                Nothing ->
+                    { radius = 0, x = 0, y = 0 }
+    in
+        case list of
+            [] ->
+                []
 
+            _ ->
+                [ circle
+                    [ cx (getX getMineral)
+                    , cy (getY getMineral)
+                    , r (getR getMineral)
+                    , fill
+                        (case getR (getMineral) of
+                            "10" ->
+                                "#52514A"
 
-drawSilver list =
-    if list /= [] then
-        [ circle [ cx (getX (getMineral list 1)), cy (getY (getMineral list 1)), r (getR (getMineral list 1)), fill "#EBEBE7" ] [] ]
-            ++ drawSilver
-                (case (tail (list)) of
-                    Just y ->
-                        y
+                            "7" ->
+                                "#EBEBE7"
 
-                    Nothing ->
-                        []
-                )
-    else
-        []
-
-
-drawGold list =
-    if list /= [] then
-        [ circle [ cx (getX (getMineral list 1)), cy (getY (getMineral list 1)), r (getR (getMineral list 1)), fill "#E7CB2A" ] [] ]
-            ++ drawGold
-                (case (tail (list)) of
-                    Just y ->
-                        y
-
-                    Nothing ->
-                        []
-                )
-    else
-        []
+                            _ ->
+                                "#E7CB2A"
+                        )
+                    ]
+                    []
+                ]
+                    ++ drawMineral (removeAt 0 list)
 
 
 drawSnitch list =
-    if list /= [] then
-        [ circle [ cx (getXSnitch (getSnitch list 1)), cy (getYSnitch (getSnitch list 1)), r (getRSnitch (getSnitch list 1)), fill "#E7CB2A" ] [] ]
-            ++ drawSnitch
-                (case (tail (list)) of
-                    Just y ->
-                        y
+    let
+        getSnitch =
+            case getAt 0 list of
+                Just y ->
+                    y
 
-                    Nothing ->
-                        []
-                )
-    else
-        []
+                Nothing ->
+                    { radius = 0, x = 0, y = 0, xCenter = 0, yCenter = 0 }
+    in
+        case list of
+            [] ->
+                []
+
+            _ ->
+                [ circle [ cx (getXSnitch getSnitch), cy (getYSnitch (getSnitch)), r (getRSnitch (getSnitch)), fill "#E7CB2A" ] [] ]
+                    ++ drawSnitch (removeAt 0 list)
 
 
 gameWorld model =
@@ -580,9 +540,9 @@ gameWorld model =
               , circle [ cx "120", cy "120", r "8", fill "Black" ] []
               , line [ x1 "120", y1 "120", x2 (toString (handX model)), y2 (toString (handY model)), stroke "Black" ] []
               ]
-            , drawIron model.iron
-            , drawSilver model.silver
-            , drawGold model.gold
+            , drawMineral model.iron
+            , drawMineral model.silver
+            , drawMineral model.gold
             , drawSnitch model.snitch
             ]
         )
