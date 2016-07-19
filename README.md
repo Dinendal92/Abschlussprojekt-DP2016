@@ -16,5 +16,6 @@ Gold Miner ist ein Flashgame bei dem mit Hilfe eines Greifhakens Goldklumpen ein
 -- 19.07.2016
 - Collide von subscription zu update
 - allgemeinere Modellierung begonnen (iron, sivler, gold, snitches als Listen modelliert)
+- Liste an Leveln inkl. Level 3 hinzugefügt
 
 https://Dinendal92.github.io/Abschlussprojekt-DP2016/index.html
