@@ -297,7 +297,7 @@ collisionWhere2 model snitches list =
                     y
 
                 Nothing ->
-                    { radius = 0, x = 0, y = 0, xCenter = 0, yCenter = 1 }
+                    { radius = 0, x = 0, y = 0, xCenter = 0, yCenter = 0 }
     in
         case list of
             [] ->
